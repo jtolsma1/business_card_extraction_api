@@ -1,0 +1,28 @@
+# Secrets (commit .env.example instead)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Load-test output
+scripts/results/
+*.csv
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

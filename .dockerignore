@@ -1,0 +1,31 @@
+# Secrets: this is the important one
+.env
+.env.*
+
+# Version control
+.git/
+.gitignore
+
+# Python junk
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Not needed inside the image
+scripts/
+notebooks/
+.ipynb_checkpoints/
+*.csv
+Dockerfile
+docker-compose.yaml
+.dockerignore
+.DS_Store
+.vscode/
+.idea/
