@@ -9,11 +9,11 @@ from app.settings import get_settings
 
 settings = get_settings()
 
-class CardUrlError(BaseException):
+class CardUrlError(Exception):
     def __init__(self,message):
         super().__init__(message)
 
-class CardFileTypeError(BaseException):
+class CardFileTypeError(Exception):
     def __init__(self,message):
         super().__init__(message)
 class LookupRequest(BaseModel):
