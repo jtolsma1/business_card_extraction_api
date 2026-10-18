@@ -8,6 +8,14 @@ from pydantic import BaseModel, HttpUrl, Field,field_validator
 from app.settings import get_settings
 
 settings = get_settings()
+
+class CardUrlError(BaseException):
+    def __init__(self,message):
+        super().__init__(message)
+
+class CardFileTypeError(BaseException):
+    def __init__(self,message):
+        super().__init__(message)
 class LookupRequest(BaseModel):
     request_id:str = Field(min_length=1,max_length=64)
     source_system:str = Field(min_length=1,max_length=32)
@@ -23,10 +31,10 @@ class LookupRequest(BaseModel):
                 if file_type in settings.ALLOWED_IMAGE_TYPES:
                     return url
                 else:
-                    raise ValueError(f"url file type '{file_type.upper()}' not in list of approved file types")
+                    raise CardFileTypeError(message=f"url file type '{file_type.upper()}' not in list of approved file types")
         if len(url) > 100:
             url = f"{url[:100]}..."
-        raise ValueError(f"card URL is not in the list of approved hosts: {url}")
+        raise CardUrlError(message=f"card URL is not in the list of approved hosts: {url}")
 
 class LookupResponse(BaseModel):
     request_id:str
