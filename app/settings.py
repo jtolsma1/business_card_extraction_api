@@ -20,12 +20,12 @@ class Settings(BaseSettings):
     FETCH_USER_AGENT:str
 
     # Fake extractor for testing concurrency without incurring Anthropic credits ---
-    USE_FAKE_EXTRACTOR = True
-    FAKE_EXTRACTOR_DELAY_SECONDS = 2
+    USE_FAKE_EXTRACTOR:bool= True
+    FAKE_EXTRACTOR_DELAY_SECONDS:int = 2
 
     # Server ---
-    HOST_PORT=8000
-    LOG_LEVEL=info
+    HOST_PORT:int=8000
+    LOG_LEVEL:str="info"
 
 @lru_cache
 def get_settings() -> Settings:
