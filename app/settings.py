@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     
     # Image Fetch ---
     ALLOWED_IMAGE_HOSTS:list[str]
+    ALLOWED_IMAGE_TYPES:list[str]
     FETCH_TIMEOUT_SECONDS:int = 15
     MAX_IMAGE_BYTES:float = 5.0e6
     FETCH_USER_AGENT:str
@@ -30,8 +31,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
-
-
-
-
