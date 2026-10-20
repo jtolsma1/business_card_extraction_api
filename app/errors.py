@@ -24,6 +24,17 @@ class ProcessTimeout(AppError):
     status_code = 504
     code = "process_timeout"
 
+class ImageMaxSizeExceeded(AppError):
+    status_code = 413
+    code = "image_max_size_exceeded"
+
+class VLMRateLimit(AppError):
+    status_code = 503
+    code = "vlm_rate_limit"
+
+class ResourceConnectionFailure(AppError):
+    status_code = 502
+    code = "vlm_rate_limit"
 
 async def app_error_handler(request:Request,exc:AppError):
     return JSONResponse(
