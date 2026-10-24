@@ -21,21 +21,6 @@ class LookupRequest(BaseModel):
     source_system:str = Field(min_length=1,max_length=32)
     card_url: HttpUrl
 
-    @field_validator("card_url")
-    @classmethod
-    def validate_card_url(cls,url):
-        url = str(url)
-        file_type = url.rsplit(".",1)[1]
-        for host in settings.ALLOWED_IMAGE_HOSTS:
-            if host in url:
-                if file_type in settings.ALLOWED_IMAGE_TYPES:
-                    return url
-                else:
-                    raise CardFileTypeError(message=f"url file type '{file_type.upper()}' not in list of approved file types")
-        if len(url) > 100:
-            url = f"{url[:100]}..."
-        raise CardUrlError(message=f"card URL is not in the list of approved hosts: {url}")
-
 class LookupResponse(BaseModel):
     request_id:str
     business_name:str = ""
