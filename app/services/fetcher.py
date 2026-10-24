@@ -4,6 +4,7 @@ Don’t follow redirects blindly. A redirect can send you to a host you never al
 Reject private IP ranges, enforce the size cap, and verify the content type.
 Return the bytes, the media type, and the download time.
 """
+from time import time
 from httpx2 import AsyncClient
 from errors import (
     ImageMaxSizeExceeded, 
@@ -27,6 +28,8 @@ async def fetch_image_bytes(
         allowed_image_types:list[str]
         ):
     
+    start = time()
+
     # Validate image host before executing image download
     is_valid_host = validate_image_host(image_url,allowed_image_hosts)
     if is_valid_host is False:
@@ -49,5 +52,8 @@ async def fetch_image_bytes(
             if len(buf) > max_bytes:
                 raise ImageMaxSizeExceeded(f"Image exceeds maximum size limit of {max_bytes} bytes and will not be downloaded")
             
-    return buf
+    end = time()
+    download_time_ms = (end - start)*1000
+
+    return buf, image_type, download_time_ms
         
