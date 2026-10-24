@@ -20,6 +20,18 @@ class AppError(Exception):
     def __init__(self,message:str):
         self.message = message
 
+class ImageNotFound(AppError):
+    status_code = 422
+    code = "image_not_found"
+
+class InvalidImageTypeError(AppError):
+    status_code = 415
+    code = "invalid_image_type"
+
+class InvalidImageHost(AppError):
+    status_code = 422
+    code = "invalid_image_host"
+
 class ProcessTimeout(AppError):
     status_code = 504
     code = "process_timeout"
