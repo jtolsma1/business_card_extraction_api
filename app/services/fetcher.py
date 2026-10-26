@@ -4,9 +4,9 @@ Don’t follow redirects blindly. A redirect can send you to a host you never al
 Reject private IP ranges, enforce the size cap, and verify the content type.
 Return the bytes, the media type, and the download time.
 """
-from time import time
-from httpx2 import AsyncClient
-from errors import (
+from time import time,sleep
+from loguru import logger
+from app.errors import (
     ImageMaxSizeExceeded, 
     ImageNotFound, 
     InvalidImageHost, 
@@ -20,12 +20,14 @@ def validate_image_host(image_url,allowed_image_hosts):
     return False
 
 
-async def fetch_image_bytes(
-        httpx2_client:AsyncClient,
+async def run_image_byte_fetch(
+        httpx2_client,
+        request_id,
         image_url:str,
         max_bytes:float,
         allowed_image_hosts:list[str],
-        allowed_image_types:list[str]
+        allowed_image_types:list[str],
+        max_attempts:int
         ):
     
     start = time()
@@ -33,27 +35,42 @@ async def fetch_image_bytes(
     # Validate image host before executing image download
     is_valid_host = validate_image_host(image_url,allowed_image_hosts)
     if is_valid_host is False:
-        raise InvalidImageHost("Image url does not match any host on the image host whitelist")
+        raise InvalidImageHost(f"Image url passed for request id {request_id} does not match any host on the image host whitelist")
     
-    # Stream image download and break if maximum image size is exceeded
-    async with httpx2_client.stream("GET",image_url) as response:
+    for _ in range(max_attempts):
+        success = False
+        try:
+            # Stream image download and break if maximum image size is exceeded
+            async with httpx2_client.stream("GET",image_url) as response:
 
-        if response.status_code != 200:
-            raise ImageNotFound(f"Request to provided url returned failure status code {response.status_code}")
+                if response.status_code != 200:
+                    raise ImageNotFound(f"Request to provided url for request id {request_id} returned failure status code {response.status_code}")
 
-        image_type = response.headers["Content-Type"] 
-        if image_type not in allowed_image_types:
-            raise InvalidImageTypeError(f"Image URL directs to unsupported image type: {image_type}")
+                image_type = response.headers["Content-Type"] 
+                if image_type not in allowed_image_types:
+                    raise InvalidImageTypeError(f"Image URL for request id {request_id} directs to unsupported image type: {image_type}")
 
-        buf = bytearray()
-        async for chunk in response.aiter_bytes():
-            buf.extend(chunk)
+                buf = bytearray()
+                async for chunk in response.aiter_bytes():
+                    buf.extend(chunk)
 
-            if len(buf) > max_bytes:
-                raise ImageMaxSizeExceeded(f"Image exceeds maximum size limit of {max_bytes} bytes and will not be downloaded")
-            
+                    if len(buf) > max_bytes:
+                        raise ImageMaxSizeExceeded(f"Image for request id {request_id} exceeds maximum size limit of {max_bytes} bytes and will not be downloaded")
+            success = True
+        except Exception as error:
+            if type(error).__name__ == "ImageNotFound" and response.status_code:
+                logger.warning(f"Image fetch for request id {request_id} returned {response.status_code}; retrying")
+                sleep(0.5)
+                continue
+            else:
+                raise error
+
+    
     end = time()
-    download_time_ms = (end - start)*1000
-
-    return buf, image_type, download_time_ms
+    download_time_ms = end - start
+    
+    if success:
+        return request_id, buf, image_type, download_time_ms
+    else:
+        raise ImageNotFound(f"Request to provided url for request id {request_id} returned failure status code {response.status_code}")
         
