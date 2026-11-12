@@ -22,7 +22,7 @@ def validate_image_host(image_url,allowed_image_hosts):
 
 async def run_image_byte_fetch(
         httpx2_client,
-        request_id,
+        request_id:str,
         image_url:str,
         max_bytes:float,
         allowed_image_hosts:list[str],
@@ -44,7 +44,7 @@ async def run_image_byte_fetch(
             async with httpx2_client.stream("GET",image_url) as response:
 
                 if response.status_code != 200:
-                    raise ImageNotFound(f"Request to provided url for request id {request_id} returned failure status code {response.status_code}")
+                    raise ImageNotFound("")
 
                 image_type = response.headers["Content-Type"] 
                 if image_type not in allowed_image_types:
@@ -67,10 +67,10 @@ async def run_image_byte_fetch(
 
     
     end = time()
-    download_time_ms = end - start
+    download_time = end - start
     
     if success:
-        return request_id, buf, image_type, download_time_ms
+        return request_id, buf, image_type, download_time
     else:
         raise ImageNotFound(f"Request to provided url for request id {request_id} returned failure status code {response.status_code}")
         
