@@ -44,10 +44,6 @@ class VLMRateLimit(AppError):
     status_code = 503
     code = "vlm_rate_limit"
 
-class ResourceConnectionFailure(AppError):
-    status_code = 502
-    code = "vlm_rate_limit"
-
 async def app_error_handler(request:Request,exc:AppError):
     return JSONResponse(
         status_code=exc.status_code,
