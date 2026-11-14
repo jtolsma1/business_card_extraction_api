@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     HOST_PORT:int=8000
     LOG_LEVEL:str="info"
 
+    # Other
+    MAX_ATTEMPTS:int = 2 # maximum number of times to attempt io functions
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

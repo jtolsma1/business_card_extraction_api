@@ -36,7 +36,6 @@ async def run_vlm_extraction(
         request_id:str,
         image_bytes:bytes,
         image_type:str,
-        download_time:float,
         vlm_model:str,
         max_attempts:int
         ):
@@ -72,15 +71,15 @@ async def run_vlm_extraction(
                     ],
                 )
 
- 
 
                 if isinstance(response,ParsedMessage):
                     data = response.parsed_output
 
                     if data is not None:
-                        vlm_response = data.model_dump()
-                        vlm_response.update({"download_time":download_time})
-                        return vlm_response
+                        business_name = data.business_name
+                        person_name = data.person_name
+                        contact_numbers = data.contact_numbers
+                        return business_name,person_name,contact_numbers
 
 
         except Exception as error:
@@ -95,7 +94,6 @@ async def run_vlm_extraction_with_fake_extractor(
         request_id:str,
         image_bytes:bytes,
         image_type:str,
-        download_time:float,
         vlm_model:str,
         max_attempts:int,
         fake_extractor:bool,
@@ -105,25 +103,24 @@ async def run_vlm_extraction_with_fake_extractor(
     if fake_extractor is True:
         await sleep(uniform(FAKE_EXTRACTOR_SLEEP_RANGE[0],FAKE_EXTRACTOR_SLEEP_RANGE[1]))
         end = time()
-        return {
-            "business_name":"Test Business, Inc.",
-            "person_name":"John Doe",
-            "contact_numbers":["+1-555-555-1234","+1-555-555-5555"],
-            "download_time":download_time,
-            "vlm_extraction_time":end-start,
-        }
+        vlm_response_time = end-start
+        return (
+            "Test Business, Inc.",
+            "John Doe",
+            ["+1-555-555-1234","+1-555-555-5555"],
+            vlm_response_time,
+        )
 
     else:
-        vlm_response = await run_vlm_extraction(
+        business_name,person_name,contact_numbers = await run_vlm_extraction(
             anthropic_client,
             sem,
             request_id,
             image_bytes,
             image_type,
-            download_time,
             vlm_model,
             max_attempts
-            )
+        )
         end = time()
-        vlm_response.update({"vlm_extraction_time":end-start})
-        return vlm_response
+        vlm_response_time = end-start
+        return business_name,person_name,contact_numbers,vlm_response_time

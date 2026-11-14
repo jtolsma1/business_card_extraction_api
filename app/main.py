@@ -3,13 +3,13 @@ Builds the app and defines the lifespan. On startup it creates the httpx2 async 
 It registers the routers and error handlers.
 Optionally, a middleware assigns each request an ID and logs start and finish.
 """
-import os
 from fastapi import FastAPI
 from anthropic import AsyncAnthropic
-from threading import Semaphore
+import asyncio
 import httpx2
 from contextlib import asynccontextmanager
 from app.settings import get_settings
+from app.routers.routers import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,9 +20,10 @@ async def lifespan(app: FastAPI):
         api_key = settings.CLAUDE_API_KEY,
         timeout=settings.CLAUDE_TIMEOUT_SECONDS
         )
-    app.state.semaphore = Semaphore(
+    app.state.semaphore = asyncio.Semaphore(
         value=settings.CLAUDE_MAX_CONCURRENT_CALLS
         )
+    app.state.settings = settings
 
     yield
 
@@ -30,5 +31,5 @@ async def lifespan(app: FastAPI):
     await app.state.anthropic_client.close()
 
 app = FastAPI(lifespan=lifespan)
-
+app.include_router(router)
 

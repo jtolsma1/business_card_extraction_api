@@ -70,7 +70,7 @@ async def run_image_byte_fetch(
     download_time = end - start
     
     if success:
-        return request_id, buf, image_type, download_time
+        return buf, image_type, download_time
     else:
         raise ImageNotFound(f"Request to provided url for request id {request_id} returned failure status code {response.status_code}")
         
