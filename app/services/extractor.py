@@ -12,15 +12,13 @@ from asyncio import sleep
 from random import uniform
 from time import time
 from anthropic.types import ParsedMessage
-from app.errors import VLMRateLimit, ResourceConnectionFailure, ImageMaxSizeExceeded
+from app.errors import VLMRateLimit, ProcessTimeout
+from anthropic import RateLimitError,APITimeoutError,InternalServerError
 
 class BusinessCardData(BaseModel):
     business_name:str
     person_name:str
     contact_numbers:list[str]
-
-FAKE_EXTRACTOR_SLEEP_RANGE = (2.4,4.1)
-FAKE_EXTRACTOR_DATA = {""}
 
 def _get_prompt():
     return """
@@ -42,7 +40,6 @@ async def run_vlm_extraction(
 
     image_b64 = b64encode(image_bytes).decode("utf-8")
     prompt = _get_prompt()
-    last_error = None
     for _ in range(max_attempts):
         try:
             async with sem:
@@ -83,9 +80,18 @@ async def run_vlm_extraction(
 
 
         except Exception as error:
-            last_error = error
-            continue
-    raise Exception(f"VLM extraction for image passed in request id {request_id} failed due to: {last_error}")
+            if isinstance(error,RateLimitError):
+                logger.warning(f"VLM extraction operation for request id {request_id} encountered rate limit error; backing off and retrying")
+                await sleep(1)
+                continue
+            elif isinstance(error,InternalServerError):
+                logger.warning(f"VLM extraction encountered an internal server error (status 500); retrying")
+                await sleep(0.5)
+                continue
+            elif isinstance(error,APITimeoutError):
+                raise ProcessTimeout(f"VLM extraction operation for request id {request_id} encountered a timeout error and will not be retried")
+            else:
+                raise error
 
 
 async def run_vlm_extraction_with_fake_extractor(
@@ -97,11 +103,14 @@ async def run_vlm_extraction_with_fake_extractor(
         vlm_model:str,
         max_attempts:int,
         fake_extractor:bool,
+        fake_extractor_sleep_range,
         ):
     
     start = time()
     if fake_extractor is True:
-        await sleep(uniform(FAKE_EXTRACTOR_SLEEP_RANGE[0],FAKE_EXTRACTOR_SLEEP_RANGE[1]))
+        fake_extractor_sleep_range = fake_extractor_sleep_range.split(",")
+        sleep_values = [float(val) for val in fake_extractor_sleep_range]
+        await sleep(uniform(sleep_values[0],sleep_values[1]))
         end = time()
         vlm_response_time = end-start
         return (
@@ -119,8 +128,8 @@ async def run_vlm_extraction_with_fake_extractor(
             image_bytes,
             image_type,
             vlm_model,
-            max_attempts
-        )
+            max_attempts,
+        ) # type: ignore
         end = time()
         vlm_response_time = end-start
         return business_name,person_name,contact_numbers,vlm_response_time
