@@ -4,7 +4,6 @@ It calls your existing async Claude helper and maps Anthropic’s exception type
 The media type is a parameter, not a hardcoded image/jpeg.
 Fake mode sleeps for the configured delay and returns canned data, with no network involved.
 """
-import json
 from loguru import logger
 from base64 import b64encode
 from pydantic import BaseModel
