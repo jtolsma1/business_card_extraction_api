@@ -5,12 +5,14 @@ Reject private IP ranges, enforce the size cap, and verify the content type.
 Return the bytes, the media type, and the download time.
 """
 from time import time,sleep
+from httpx2 import ConnectTimeout
 from loguru import logger
 from app.errors import (
     ImageMaxSizeExceeded, 
     ImageNotFound, 
     InvalidImageHost, 
-    InvalidImageTypeError
+    InvalidImageTypeError,
+    ProcessTimeout
 )
 
 def validate_image_host(image_url,allowed_image_hosts):
@@ -39,6 +41,7 @@ async def run_image_byte_fetch(
     
     for _ in range(max_attempts):
         success = False
+        last_error=None
         try:
             # Stream image download and break if maximum image size is exceeded
             async with httpx2_client.stream("GET",image_url) as response:
@@ -58,9 +61,15 @@ async def run_image_byte_fetch(
                         raise ImageMaxSizeExceeded(f"Image for request id {request_id} exceeds maximum size limit of {max_bytes} bytes and will not be downloaded")
             success = True
         except Exception as error:
-            if type(error).__name__ == "ImageNotFound" and response.status_code:
+            if isinstance(error,ImageNotFound) and response.status_code:
                 logger.warning(f"Image fetch for request id {request_id} returned {response.status_code}; retrying")
                 sleep(0.5)
+                last_error = error
+                continue
+            elif isinstance(error,ConnectTimeout):
+                logger.warning(f"Image fetch for request id {request_id} reached http connection timeout; retrying")
+                sleep(0.5)
+                last_error = error
                 continue
             else:
                 raise error
@@ -71,6 +80,8 @@ async def run_image_byte_fetch(
     
     if success:
         return buf, image_type, download_time
-    else:
+    elif isinstance(last_error,ImageNotFound):
         raise ImageNotFound(f"Request to provided url for request id {request_id} returned failure status code {response.status_code}")
+    elif isinstance(last_error,ConnectTimeout):
+        raise ProcessTimeout(f"Request to provided url for request id {request_id} reached HTTP connection timeout")
         
