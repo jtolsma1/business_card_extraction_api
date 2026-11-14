@@ -10,6 +10,7 @@ import httpx2
 from contextlib import asynccontextmanager
 from app.settings import get_settings
 from app.routers.routers import router
+from app.errors import AppError,app_error_handler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,4 +33,4 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(router)
-
+app.add_exception_handler(AppError,app_error_handler) # type: ignore

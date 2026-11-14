@@ -32,8 +32,8 @@ async def extract_contact_info(
         max_bytes=settings.MAX_IMAGE_BYTES,
         allowed_image_hosts=settings.ALLOWED_IMAGE_HOSTS,
         allowed_image_types=settings.ALLOWED_IMAGE_TYPES,
-        max_attempts=settings.MAX_ATTEMPTS,
-    )
+        max_attempts=settings.MAX_ATTEMPTS, 
+    ) # type: ignore
 
     business_name,person_name,contact_numbers,vlm_response_time = await run_vlm_extraction_with_fake_extractor(
         anthropic_client=anthropic_client,
@@ -44,6 +44,7 @@ async def extract_contact_info(
         vlm_model=settings.CLAUDE_MODEL,
         max_attempts=settings.MAX_ATTEMPTS,
         fake_extractor=settings.USE_FAKE_EXTRACTOR,
+        fake_extractor_sleep_range=settings.FAKE_EXTRACTOR_SLEEP_RANGE,
     )
 
     end = time.time()
