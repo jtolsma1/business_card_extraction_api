@@ -37,9 +37,6 @@ import uuid
 from httpx2 import AsyncClient
 from collections import namedtuple
 
-from dotenv import load_dotenv
-load_dotenv()
-
 def set_config():
 
     api_url = "http://localhost:8000/v1/contact_info_extract"
@@ -131,7 +128,6 @@ def create_report(response_list,duration):
 
 async def main():
     config = set_config()
-    httpx2_client = AsyncClient(timeout=config.client_timeout)
     image_urls = [config.base_url+file for file in config.image_files]
     print("Image URLs to Extract")
     for i,url in enumerate(image_urls):
@@ -140,21 +136,22 @@ async def main():
     print("Total Count of Image URLs:",len(image_urls))
     print("")
 
-    sync_start = time()
-    responses_sync = await call_vlm_in_sequence(httpx2_client,config.api_url,image_urls)
-    sync_end = time()
-    sync_duration = sync_end-sync_start
+    async with AsyncClient(timeout=config.client_timeout) as httpx2_client:
+        sync_start = time()
+        responses_sync = await call_vlm_in_sequence(httpx2_client,config.api_url,image_urls)
+        sync_end = time()
+        sync_duration = sync_end-sync_start
 
-    async_start = time()
-    responses_async = await call_vlm_asynchronously(httpx2_client,config.api_url,image_urls)
-    async_end = time()
-    async_duration = async_end-async_start
+        async_start = time()
+        responses_async = await call_vlm_asynchronously(httpx2_client,config.api_url,image_urls)
+        async_end = time()
+        async_duration = async_end-async_start
 
-    print("-- SYNCHRONOUS RESULTS --")
-    create_report(responses_sync,sync_duration)
+        print("-- SYNCHRONOUS RESULTS --")
+        create_report(responses_sync,sync_duration)
 
-    print("-- ASYNCHRONOUS RESULTS --")
-    create_report(responses_async,async_duration)
+        print("-- ASYNCHRONOUS RESULTS --")
+        create_report(responses_async,async_duration)
 
 if __name__ == "__main__":
     asyncio.run(main())

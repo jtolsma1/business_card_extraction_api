@@ -65,7 +65,7 @@ async def run_image_byte_fetch(
                 if response.status_code != 200:
                     raise ImageNotFound("")
 
-                image_type = response.headers["Content-Type"] 
+                image_type = response.headers.get("Content-Type", "").split(";")[0].strip().lower()
                 if image_type not in allowed_image_types:
                     raise InvalidImageTypeError(f"Image URL for request id {request_id} directs to unsupported image type: {image_type}")
 
@@ -76,6 +76,7 @@ async def run_image_byte_fetch(
                     if len(buf) > max_bytes:
                         raise ImageMaxSizeExceeded(f"Image for request id {request_id} exceeds maximum size limit of {max_bytes} bytes and will not be downloaded")
             success = True
+            break
         except Exception as error:
             if isinstance(error,ImageNotFound) and response.status_code:
                 logger.warning(f"Image fetch for request id {request_id} returned {response.status_code}; retrying")

@@ -4,7 +4,7 @@ from anthropic import AsyncAnthropic
 from httpx2 import AsyncClient
 from fastapi import FastAPI
 
-from app.errors import AppError,app_error_handler
+from app.errors import AppError,app_error_handler,unhandled_error_handler
 from app.routers.routers import router
 from app.settings import get_settings
 
@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
     app.state.httpx2_client = AsyncClient(timeout=settings.FETCH_TIMEOUT_SECONDS)
     app.state.anthropic_client = AsyncAnthropic(
         api_key = settings.CLAUDE_API_KEY,
+        max_retries=0, # use retry structure created in this app
         timeout=settings.CLAUDE_TIMEOUT_SECONDS
         )
     app.state.semaphore = asyncio.Semaphore(
@@ -47,3 +48,4 @@ Every error returns `{"code", "message", "request_id"}`.
 )
 app.include_router(router)
 app.add_exception_handler(AppError,app_error_handler) # type: ignore
+app.add_exception_handler(AppError,unhandled_error_handler) # type: ignore
