@@ -30,6 +30,17 @@ async def run_vlm_extraction(
         vlm_model:str,
         max_attempts:int
         ):
+    """
+    Extracts information described in the prompt from the business card image using the VLM. Executes multiple retries.
+
+    @param anthropic_client: async Anthropic client used to access VLM
+    @param sem: semaphore created to limit simultaneous VLM calls
+    @param request_id: request id passed in the API request body; used for logging
+    @param image_bytes: image bytes loaded and validated using the fetcher service
+    @param vlm_model: model type (e.g.'claude-haiku-5') used to complete extraction
+    @param max_attemps: number of attempts made to load image before giving up
+    @returns: business name, person name, contact numbers on card image
+    """
 
     image_b64 = b64encode(image_bytes).decode("utf-8")
     prompt = _get_prompt()
@@ -116,6 +127,16 @@ async def run_vlm_extraction_with_fake_extractor(
         fake_extractor:bool,
         fake_extractor_sleep_range,
         ):
+    """
+    Wrapper for run_vlm_extraction that adds a 'fake extractor'. When fake extractor flag is true (set in env file), 
+    vlm extraction function does not call the model and instead sleeps for a random interval to simulate vlm call.
+    This saves tokens when testing wiring and asynch functionality.
+
+    Net-new params on top of run_vlm_extraction:
+    @param fake_extractor: boolean that turns fake extractor on and off
+    @param fake_extractor_sleep_range: range of time, in fractional seconds, to sleep as VLM simulation
+    @returns: same as run_vlm_extraction plus vlm extraction time
+    """
     
     start = time()
     if fake_extractor is True:
