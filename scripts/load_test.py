@@ -132,7 +132,7 @@ def create_report(response_list,duration):
 
 async def main():
     config = set_config()
-    httpx2_client = AsyncClient(timeout=config.client_timeout,verify=False)
+    httpx2_client = AsyncClient(timeout=config.client_timeout)
     image_urls = [config.base_url+file for file in config.image_files]
     print("Image URLs to Extract")
     for i,url in enumerate(image_urls):
