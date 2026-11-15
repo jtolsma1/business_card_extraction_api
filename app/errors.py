@@ -36,7 +36,7 @@ async def app_error_handler(request:Request,exc:AppError):
     return JSONResponse(
         status_code=exc.status_code,
         content={
-            "code":exc.status_code,
+            "code":exc.code,
             "message":exc.message,
             "request_id":getattr(request.state,"request_id",None)
             }
