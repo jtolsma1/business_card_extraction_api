@@ -1,4 +1,5 @@
-from time import time,sleep
+from asyncio import sleep
+from time import time
 from httpx2 import ConnectTimeout
 from loguru import logger
 
@@ -73,12 +74,12 @@ async def run_image_byte_fetch(
         except Exception as error:
             if isinstance(error,ImageNotFound) and response.status_code:
                 logger.warning(f"Image fetch for request id {request_id} returned {response.status_code}; retrying")
-                sleep(0.5)
+                await sleep(0.5)
                 last_error = error
                 continue
             elif isinstance(error,ConnectTimeout):
                 logger.warning(f"Image fetch for request id {request_id} reached http connection timeout; retrying")
-                sleep(0.5)
+                await sleep(0.5)
                 last_error = error
                 continue
             else:
