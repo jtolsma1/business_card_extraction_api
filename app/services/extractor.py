@@ -44,7 +44,7 @@ async def run_vlm_extraction(
             async with sem:
                 response = await anthropic_client.messages.parse(
                     model=vlm_model,
-                    max_tokens=200,
+                    max_tokens=1024,
                     output_format=BusinessCardData,
                     messages=[
                         {
