@@ -1,9 +1,3 @@
-"""
-Check the host against the allowlist (it must include the web.cs.wpi.edu host) and GET with your descriptive User-Agent.
-Don’t follow redirects blindly. A redirect can send you to a host you never allowed.
-Reject private IP ranges, enforce the size cap, and verify the content type.
-Return the bytes, the media type, and the download time.
-"""
 from time import time,sleep
 from httpx2 import ConnectTimeout
 from loguru import logger
@@ -27,10 +21,25 @@ async def run_image_byte_fetch(
         request_id:str,
         image_url:str,
         max_bytes:float,
+        headers:dict,
         allowed_image_hosts:list[str],
         allowed_image_types:list[str],
         max_attempts:int
         ):
+    
+    """
+    Loads image as bytes from image url passed in API request body.
+
+    @param httpx2_client: HTTP client needed to access the online image
+    @param request_id: request id passed in the API request body; used for logging
+    @param image_url: image url passed in API request body
+    @param max_bytes: maximum image size; if exceeded, stops load and raises error
+    @param headers: image download headers to identify this API's user-agent
+    @param allowed_image_hosts: list of allowed image hosts; if image url does not match, raises error
+    @param allowed_image_types: list of allowed image types; if image url does not match, raises error
+    @param max_attempts: number of attempts made to load image before giving up
+    @returns: image bytes, image type, image download time
+    """
     
     start = time()
 
@@ -44,7 +53,7 @@ async def run_image_byte_fetch(
         last_error=None
         try:
             # Stream image download and break if maximum image size is exceeded
-            async with httpx2_client.stream("GET",image_url) as response:
+            async with httpx2_client.stream(method="GET",url=image_url,headers=headers) as response:
 
                 if response.status_code != 200:
                     raise ImageNotFound("")
