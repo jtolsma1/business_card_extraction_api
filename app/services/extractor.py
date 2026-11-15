@@ -1,9 +1,3 @@
-"""
-Takes image bytes and a media type, base64-encodes them, and acquires the semaphore. The semaphore wraps only the Claude call, so downloads aren’t throttled.
-It calls your existing async Claude helper and maps Anthropic’s exception types onto your domain exceptions. Retry policy: let the SDK’s built-in retries handle transient errors, back off on 429, and fail fast on 401. Don’t rebuild the client.
-The media type is a parameter, not a hardcoded image/jpeg.
-Fake mode sleeps for the configured delay and returns canned data, with no network involved.
-"""
 from loguru import logger
 from base64 import b64encode
 from pydantic import BaseModel
@@ -11,8 +5,8 @@ from asyncio import sleep
 from random import uniform
 from time import time
 from anthropic.types import ParsedMessage
-from app.errors import VLMRateLimit, ProcessTimeout
-from anthropic import RateLimitError,APITimeoutError,InternalServerError
+from app.errors import AppError,VLMRateLimit,ProcessTimeout
+from anthropic import AuthenticationError,RateLimitError,APITimeoutError,InternalServerError
 
 class BusinessCardData(BaseModel):
     business_name:str
@@ -39,6 +33,15 @@ async def run_vlm_extraction(
 
     image_b64 = b64encode(image_bytes).decode("utf-8")
     prompt = _get_prompt()
+    last_error = None
+
+    """
+    RETRY POLICY
+    - If authentication error, log quietly and return a generic error to the caller
+    - If rate limit (429) or internal server error (500), retry until retries are exhausted
+    - For all other errors: fail immediately
+    """
+
     for _ in range(max_attempts):
         try:
             async with sem:
@@ -77,13 +80,17 @@ async def run_vlm_extraction(
                         contact_numbers = data.contact_numbers
                         return business_name,person_name,contact_numbers
 
-
         except Exception as error:
+            if isinstance(error,AuthenticationError):
+                logger.error(f"VLM extraction for request id {request_id} encountered an authentication error; check Claude credentials in env file")
+                raise AppError("VLM extraction encountered an internal server error; contact administrator for assistance")
             if isinstance(error,RateLimitError):
+                last_error = error
                 logger.warning(f"VLM extraction operation for request id {request_id} encountered rate limit error; backing off and retrying")
                 await sleep(1)
                 continue
             elif isinstance(error,InternalServerError):
+                last_error = error
                 logger.warning(f"VLM extraction encountered an internal server error (status 500); retrying")
                 await sleep(0.5)
                 continue
@@ -91,6 +98,11 @@ async def run_vlm_extraction(
                 raise ProcessTimeout(f"VLM extraction operation for request id {request_id} encountered a timeout error and will not be retried")
             else:
                 raise error
+    
+    if isinstance(last_error,RateLimitError):
+        raise VLMRateLimit("VLM extraction encountered rate limit error and could not be completed")
+    if isinstance(last_error,InternalServerError):
+        raise AppError("VLM extraction encountered an internal server error; contact administrator for assistance")
 
 
 async def run_vlm_extraction_with_fake_extractor(
