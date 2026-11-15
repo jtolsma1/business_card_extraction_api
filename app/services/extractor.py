@@ -1,12 +1,13 @@
-from loguru import logger
-from base64 import b64encode
-from pydantic import BaseModel
 from asyncio import sleep
+from base64 import b64encode
 from random import uniform
 from time import time
 from anthropic.types import ParsedMessage
-from app.errors import AppError,VLMRateLimit,ProcessTimeout
 from anthropic import AuthenticationError,RateLimitError,APITimeoutError,InternalServerError
+from loguru import logger
+from pydantic import BaseModel
+
+from app.errors import AppError,VLMRateLimit,ProcessTimeout
 
 class BusinessCardData(BaseModel):
     business_name:str
