@@ -1,11 +1,9 @@
-"""
-POST /v1/extractions, with an async def handler. It stays thin: start a monotonic timer, make a request ID, call the fetcher, call the extractor, and assemble the response with timings. No business logic lives here.
-"""
 import time
+from fastapi import APIRouter, Depends
 from loguru import logger
+
 from app.schemas import LookupResponse, LookupRequest
 from app.dependencies import get_httpx2_client,get_anthropic_client,get_semaphore, get_settings
-from fastapi import APIRouter, Depends
 from app.services.fetcher import run_image_byte_fetch
 from app.services.extractor import run_vlm_extraction_with_fake_extractor
 
