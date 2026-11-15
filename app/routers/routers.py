@@ -1,5 +1,5 @@
 import time
-from fastapi import APIRouter, Depends
+from fastapi import Request, APIRouter, Depends
 from loguru import logger
 
 from app.schemas import LookupResponse, LookupRequest
@@ -28,6 +28,7 @@ async def liveliness_check():
 )
 
 async def extract_contact_info(
+    request:Request,
     body:LookupRequest,
     httpx2_client=Depends(get_httpx2_client),
     anthropic_client=Depends(get_anthropic_client),
@@ -45,10 +46,10 @@ async def extract_contact_info(
     - **card_url**: full url of the business card image 
     - **returns**: business name, person name, contact numbers, and time taken for each step
 
-    Errors are returned as {"status_code","message","request_id"}.
+    Errors are returned as {"code","message","request_id"}.
 
     """
-    
+    request.state.request_id = body.request_id
     start = time.time()
     logger.info(f"Starting extraction for request id = {body.request_id} from source system = {body.source_system}")
     logger.info(f"URL passed for request id {body.request_id} = {body.card_url}")
