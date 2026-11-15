@@ -1,3 +1,35 @@
+"""Load test for the business card extraction API.
+
+Measures whether the API handles requests concurrently by sending the same
+batch of business card image URLs twice and comparing wall-clock times:
+
+1. Sequential pass: one request at a time, each awaited before the next starts.
+2. Concurrent pass: all requests created up front and awaited together
+   with asyncio.gather on a single shared event loop.
+
+If the API is truly asynchronous, the concurrent total should be close to
+the slowest single request (or ceil(N / semaphore_size) waves of the model
+call), far below the sequential total.
+
+The batch contains card images from the Stanford business-card dataset.
+
+For each pass, a report prints:
+    - total duration in seconds
+    - successful and failed responses, with the failing status codes
+    - counts of business names, person names and contact numbers extracted
+      (the string "none" is not counted as a value)
+
+Matching counts between the two passes show that concurrency did not change
+the results.
+
+Configuration lives in set_config(): API endpoint, image host and file list,
+and client timeout. The API must already be running, e.g.
+`docker compose up -d`, before this script is started.
+
+Usage:
+    python scripts/load_test.py
+"""
+
 import asyncio
 import json
 import os
