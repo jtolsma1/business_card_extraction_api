@@ -32,7 +32,6 @@ Usage:
 
 import asyncio
 import json
-import os
 from time import time
 import uuid
 from httpx2 import AsyncClient
