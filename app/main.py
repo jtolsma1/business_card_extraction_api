@@ -31,6 +31,23 @@ async def lifespan(app: FastAPI):
     await app.state.httpx2_client.aclose()
     await app.state.anthropic_client.close()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Business Card Extraction API",
+    summary="Extract names and phone numbers from business card images.",
+    description="""
+Send an image URL, get back the business name, person name and contact numbers.
+
+## How it works
+- The image is downloaded (allowlisted hosts only), then read by a vision model.
+- Requests run concurrently on one event loop.
+
+## Errors
+Every error returns `{"code", "message", "request_id"}`.
+""",
+    version="1.0.0",
+    contact={"name": "Joe Tolsma", "url": "https://github.com/jtolsma1/business_card_extraction_api"},
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
+    lifespan=lifespan,
+)
 app.include_router(router)
 app.add_exception_handler(AppError,app_error_handler) # type: ignore
