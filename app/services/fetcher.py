@@ -1,5 +1,6 @@
 from asyncio import sleep
 from time import time
+from urllib.parse import urlparse
 from httpx2 import ConnectTimeout
 from loguru import logger
 
@@ -11,11 +12,15 @@ from app.errors import (
     ProcessTimeout
 )
 
-def validate_image_host(image_url,allowed_image_hosts):
-    for host in allowed_image_hosts:
-        if host in image_url:
-            return True
-    return False
+def validate_image_host(image_url: str, allowed_image_hosts: list[str]):
+    try:
+        parsed = urlparse(image_url)
+    except ValueError:
+        return False
+    if parsed.scheme not in ("http", "https") or parsed.hostname is None:
+        return False
+    allowed = {host.strip().lower() for host in allowed_image_hosts}
+    return parsed.hostname.lower() in allowed
 
 
 async def run_image_byte_fetch(
