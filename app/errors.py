@@ -1,5 +1,6 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 class AppError(Exception):
     status_code = 500
@@ -40,4 +41,12 @@ async def app_error_handler(request:Request,exc:AppError):
             "message":exc.message,
             "request_id":getattr(request.state,"request_id",None)
             }
+    )
+
+async def unhandled_error_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled error: {exc!r}")
+    return JSONResponse(
+        status_code=500,
+        content={"code": "internal_error", "message": "Internal server error",
+                 "request_id": getattr(request.state, "request_id", None)},
     )

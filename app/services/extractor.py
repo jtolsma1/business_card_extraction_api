@@ -17,7 +17,7 @@ class BusinessCardData(BaseModel):
 def _get_prompt():
     return """
     From the business card shown, extract:
-    1. "business_name" = the name of the business shown on the card. If the card does not contain a business name (i.e. is for an indivual person not affiliated with a named business), return 'None'.
+    1. "business_name" = the name of the business shown on the card. If the card does not contain a business name (i.e. is for an individual person not affiliated with a named business), return 'None'.
     2. "person_name" = the name of the person shown on the card. If the card does not contain a person's name (i.e. is generic for a business and not specific to an individual person), return 'None'.
     3. "contact_numbers" = all phone/fax numbers shown on the card. Format each contact number as '+00-1111111', where the zeroes in this example represent the country code (1-3 digits) and the ones represent the actual contact number, which can be any length. If no country code is stated, infer it from the address shown (if given) and, failing that, assume the US country code of +1. Return as a Python list of strings containing all contact numbers, e.g. ['+00-1111111','+00-1111111', ...]. The array can contain any number of elements. If the card contains no contact numbers, return [] (empty list).
     """
@@ -38,8 +38,8 @@ async def run_vlm_extraction(
     @param sem: semaphore created to limit simultaneous VLM calls
     @param request_id: request id passed in the API request body; used for logging
     @param image_bytes: image bytes loaded and validated using the fetcher service
-    @param vlm_model: model type (e.g.'claude-haiku-5') used to complete extraction
-    @param max_attemps: number of attempts made to load image before giving up
+    @param vlm_model: model type (e.g.'claude-haiku-5-5') used to complete extraction
+    @param max_attemps: number of attempts made to extract image data before giving up
     @returns: business name, person name, contact numbers on card image
     """
 
@@ -115,6 +115,8 @@ async def run_vlm_extraction(
         raise VLMRateLimit("VLM extraction encountered rate limit error and could not be completed")
     if isinstance(last_error,InternalServerError):
         raise AppError("VLM extraction encountered an internal server error; contact administrator for assistance")
+    
+    raise AppError("VLM extraction did not return a usable result; contact administrator for assistance")
 
 
 async def run_vlm_extraction_with_fake_extractor(
