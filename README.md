@@ -36,7 +36,7 @@ returns:
 }
 ```
  
-(That example is the fake extractor's output, and the times are illustrative.) Times are in seconds. Failures come back as JSON with a `code`, a `message` and a `request_id`. `GET /v1/health` is a simple liveness check, and interactive documentation is served at `/docs`.
+(That example is the fake extractor's output, and the times are illustrative.) Times are in seconds. Failures come back as JSON with the `request_id`, a `code`, a `message`, and a `total_response_time`. `GET /v1/health` is a simple liveness check, and interactive documentation is served at `/docs`.
  
 ## Quick start
  
@@ -92,10 +92,10 @@ A few things to know when using them:
  
 | Pass | Total time | Successful responses |
 |---|---|---|
-| Sequential | 66.7 s | 20 / 20 |
-| Concurrent | 9.3 s | 20 / 20 |
+| Sequential | 58.1 s | 20 / 20 |
+| Concurrent | 11.6 s | 20 / 20 |
  
-That is about a 7x speedup, and the extracted counts were identical in both passes, so concurrency did not change the results. This is a single run on a small sample, so treat the exact figure as indicative. 
+That is about a 5x speedup, and the extracted counts were identical in both passes, so concurrency did not change the results. This is a single run on a small sample, so treat the exact figure as indicative. 
 
 The speedup is below 20x on purpose: the semaphore limits concurrent model calls to 5, so the calls go out in waves, while the image downloads overlap freely.
  
@@ -105,7 +105,7 @@ The speedup is below 20x on purpose: the semaphore limits concurrent model calls
 app/
   main.py            app creation, lifespan, exception handler registration
   settings.py        configuration from environment variables (pydantic-settings)
-  schemas.py         request and response models
+  schemas.py         request, response, and error models
   errors.py          error classes and the exception handler
   dependencies.py    Depends() providers for shared resources
   routers/routers.py the routes
