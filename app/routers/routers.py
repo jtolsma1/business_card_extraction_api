@@ -2,7 +2,7 @@ import time
 from fastapi import Request, APIRouter, Depends
 from loguru import logger
 
-from app.schemas import LookupResponse, LookupRequest
+from app.schemas import LookupResponse, LookupRequest, ErrorResponse
 from app.dependencies import get_httpx2_client,get_anthropic_client,get_semaphore, get_settings
 from app.services.fetcher import run_image_byte_fetch
 from app.services.extractor import run_vlm_extraction_with_fake_extractor
@@ -19,11 +19,11 @@ async def liveliness_check():
     tags=["contact_info_extract"],
     summary="Get the business name, person name, and contact numbers from a business card image",
     responses={
-    422: {"description":"Image not found at the url provided or the url provided is not on the allowlist"},
-    413: {"description":"Image maximum size exceeded"},
-    415: {"description":"Image type is not valid for vlm extraction"},
-    504: {"description":"Image download or VLM extraction encountered timeout condition"},
-    503: {"description":"VLM encountered a rate limit condition and was unable to respond"},
+    422: {"model":ErrorResponse,"description":"Image not found at the url provided or the url provided is not on the allowlist"},
+    413: {"model":ErrorResponse,"description":"Image maximum size exceeded"},
+    415: {"model":ErrorResponse,"description":"Image type is not valid for vlm extraction"},
+    504: {"model":ErrorResponse,"description":"Image download or VLM extraction encountered timeout condition"},
+    503: {"model":ErrorResponse,"description":"VLM encountered a rate limit condition and was unable to respond"},
     },
 )
 
@@ -46,14 +46,18 @@ async def extract_contact_info(
     - **card_url**: full url of the business card image 
     - **returns**: business name, person name, contact numbers, and time taken for each step
 
-    Errors are returned as {"code","message","request_id"}.
+    Errors are returned as {"request_id","code","message","total_response_time"}.
 
     """
-    request.state.request_id = body.request_id
+
     start = time.time()
+    request.state.request_id = body.request_id
+    request.state.start_time = start
+    image_download_headers = {"User-Agent":settings.FETCH_USER_AGENT}
+
     logger.info(f"Starting extraction for request id = {body.request_id} from source system = {body.source_system}")
     logger.info(f"URL passed for request id {body.request_id} = {body.card_url}")
-    image_download_headers = {"User-Agent":settings.FETCH_USER_AGENT}
+
 
     buf, image_type, download_time = await run_image_byte_fetch(
         httpx2_client=httpx2_client,
