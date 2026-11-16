@@ -39,7 +39,7 @@ Send an image URL, get back the business name, person name and contact numbers.
 - Requests run concurrently on one event loop.
 
 ## Errors
-Every error returns `{"code", "message", "request_id"}`.
+Every error returns `{"request_id","code","message","total_response_time"}`.
 """,
     version="1.0.0",
     contact={"name": "Joe Tolsma", "url": "https://github.com/jtolsma1/business_card_extraction_api"},
@@ -48,4 +48,4 @@ Every error returns `{"code", "message", "request_id"}`.
 )
 app.include_router(router)
 app.add_exception_handler(AppError,app_error_handler) # type: ignore
-app.add_exception_handler(AppError,unhandled_error_handler) # type: ignore
+app.add_exception_handler(Exception,unhandled_error_handler) # type: ignore

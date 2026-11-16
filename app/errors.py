@@ -1,6 +1,8 @@
+from time import time
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from loguru import logger
+from app.schemas import ErrorResponse
 
 class AppError(Exception):
     status_code = 500
@@ -33,20 +35,20 @@ class VLMRateLimit(AppError):
     status_code = 503
     code = "vlm_rate_limit"
 
-async def app_error_handler(request:Request,exc:AppError):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "code":exc.code,
-            "message":exc.message,
-            "request_id":getattr(request.state,"request_id",None)
-            }
+def build_error_response(request:Request,status_code:int,code:str,message:str):
+    start = getattr(request.state,"start_time",None)
+    end=time()
+    body = ErrorResponse(
+        request_id=getattr(request.state,"request_id",None),
+        code=code,
+        error_message=message,
+        total_response_time=end-start if start is not None else None
     )
+    return JSONResponse(status_code=status_code,content=body.model_dump())
+
+async def app_error_handler(request:Request,exc:AppError):
+    return build_error_response(request,exc.status_code,exc.code,exc.message)
 
 async def unhandled_error_handler(request: Request, exc: Exception):
     logger.exception(f"Unhandled error: {exc!r}")
-    return JSONResponse(
-        status_code=500,
-        content={"code": "internal_error", "message": "Internal server error",
-                 "request_id": getattr(request.state, "request_id", None)},
-    )
+    return build_error_response(request,500,"internal_server_error","Internal server error")
